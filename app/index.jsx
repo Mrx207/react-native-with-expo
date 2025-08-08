@@ -1,4 +1,5 @@
-import React, { useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Button,
   FlatList,
@@ -19,7 +20,23 @@ export default function index() {
 
   const inputRef = useRef(null);
 
-  const handleSubmit = () => {
+  useEffect(() => {
+    const fetchTodos = async () => {
+      try {
+        const storedTodos = await AsyncStorage.getItem("todos");
+        console.log("Fetched todos:", storedTodos);
+        if (storedTodos) {
+          setTodos(JSON.parse(storedTodos));
+        }
+      } catch (error) {
+        console.error("Error fetching todos:", error);
+      }
+    };
+
+    fetchTodos();
+  }, []);
+
+  const handleSubmit = async () => {
     if (!inputValue.trim()) {
       alert("Please enter a todo item");
       inputRef.current.focus();
@@ -31,7 +48,6 @@ export default function index() {
       inputRef.current.focus();
       return;
     }
-    console.log(editIndex);
     if (editIndex !== null) {
       const updatedTodos = [...todos];
       updatedTodos[editIndex] = { name: inputValue.trim() };
@@ -40,22 +56,36 @@ export default function index() {
     } else {
       setTodos([...todos, { name: inputValue.trim() }]);
     }
+    console.log("Todos after submit:", todos);
     setInputValue("");
     inputRef.current.clear();
     inputRef.current.focus();
-    // console.log(todos);
   };
 
   const handleUpdate = (name) => {
     console.log("Updating todo:", name);
     const index = todos.findIndex((todo) => todo.name === name);
-    console.log("Index found:", index);
     if (index !== -1) {
       setInputValue(name);
       setEditIndex(index);
       inputRef.current.focus();
     }
   };
+
+  const storeTodos = async () => {
+    try {
+      await AsyncStorage.setItem("todos", JSON.stringify(todos));
+      console.log("Todos stored successfully", todos);
+    } catch (error) {
+      console.error("Error storing todos:", error);
+    }
+  };
+
+  useEffect(() => {
+    console.log("Storing todos:", todos);
+    storeTodos();
+  }, [todos]);
+
   return (
     <SafeAreaView>
       <View>
